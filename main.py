@@ -44,7 +44,7 @@ async def send_login(client: httpx.AsyncClient):
     try:
         pre = await client.get(PRELOGIN_URL, headers=headers, params=prelogin_params)
         print(f"[Prelogin] {pre.status_code}")
-        await asyncio.sleep(random.uniform(0.05, 0.2))
+        await asyncio.sleep(random.uniform(0.2, 0.5))
         res = await client.get(LOGIN_URL, headers=headers, params=login_params)
         print(f"[Login] {res.status_code} {res.text}")
     except Exception as e:
@@ -53,15 +53,19 @@ async def send_login(client: httpx.AsyncClient):
 async def spam_loop():
     async with httpx.AsyncClient(http2=True, timeout=10) as client:
         while True:
-            tasks = [send_login(client) for _ in range(10)]
-            await asyncio.gather(*tasks)
-            await asyncio.sleep(0.5)
+            try:
+                # Giới hạn số request để không bị Render đá
+                tasks = [send_login(client) for _ in range(2)]  # Giảm xuống từ 10 -> 2
+                await asyncio.gather(*tasks)
+            except Exception as e:
+                print(f"[SPAM LOOP ERROR] {e}")
+            await asyncio.sleep(10)  # Tăng sleep để giảm tần suất
 
 app = FastAPI()
 
 @app.get("/")
 async def root():
-    return {"msg": "I’m awake 😎"}
+    return {"msg": "Tao vẫn còn sống 😎"}
 
 async def self_ping():
     async with httpx.AsyncClient() as client:
